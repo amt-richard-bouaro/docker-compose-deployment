@@ -1,0 +1,280 @@
+version: '3.8'
+services:
+  # Bank Service
+  atm-bank-management-service:
+    image: amtrbouaro/atm-bank-management-service
+    ports:
+      - '8889:8889'
+    restart: on-failure
+    depends_on:
+      - atm-bank-management-service-db
+    networks:
+      - atm-microservice-network
+      - atm-bank-management-service-network
+    env_file:
+      - ./env/atm-bank-management-service.env
+
+  atm-bank-management-service-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: atm-bank-management-service-db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - '4009:5432'
+    networks:
+      - atm-bank-management-service-network
+
+  # Account Service
+  atm-account-management-service:
+    image: amtrbouaro/atm-account-management-service
+    ports:
+      - '8884:8884'
+    restart: on-failure
+    depends_on:
+      - atm-account-management-service-db
+    networks:
+      - atm-microservice-network
+      - atm-account-management-service-network
+    env_file:
+      - ./env/atm-account-management-service.env
+
+  atm-account-management-service-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: atm-account-management-service-db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - '4004:5432'
+    networks:
+      - atm-account-management-service-network
+
+## User Management Service
+  atm-user-management-service:
+    image: amtrbouaro/atm-user-management-service
+    ports:
+      - '8888:8888'
+    restart: on-failure
+    depends_on:
+      - atm-user-management-service-db
+      - atm-kafka
+    networks:
+      - atm-microservice-network
+      - atm-user-management-service-network
+    env_file:
+      - ./env/atm-user-management-service.env
+
+  atm-user-management-service-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: atm-user-management-service-db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - '4008:5432'
+    networks:
+      - atm-user-management-service-network
+
+
+#  # Transaction Management Service
+  atm-transaction-management-service:
+    image: amtrbouaro/atm-transaction-management-service
+    ports:
+      - '8887:8887'
+    restart: on-failure
+    depends_on:
+      - atm-transaction-management-service-db
+      - atm-kafka
+    networks:
+      - atm-microservice-network
+      - atm-transaction-management-service-network
+    env_file:
+      - ./env/atm-transaction-management-service.env
+
+  atm-transaction-management-service-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: atm-transaction-management-service-db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - '4007:5432'
+    networks:
+      - atm-transaction-management-service-network
+
+# # Notification Service
+  atm-notification-service:
+    image: amtrbouaro/atm-notification-service
+    ports:
+      - '8886:8886'
+    restart: on-failure
+    depends_on:
+      - atm-notification-service-db
+    networks:
+      - atm-microservice-network
+      - atm-notification-service-network
+    env_file:
+      - ./env/atm-notification-management-service.env
+
+  atm-notification-service-db:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: atm-notification-service-db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - '4006:5432'
+    networks:
+      - atm-notification-service-network
+
+# # Log Management Service
+  atm-log-management-service:
+    image: amtrbouaro/atm-log-management-service
+    ports:
+      - '8885:8885'
+    restart: on-failure
+    depends_on:
+      - atm-log-management-service-db
+    networks:
+      - atm-microservice-network
+      - atm-log-management-service-network
+    env_file:
+      - ./env/atm-log-management-service.env
+
+  atm-log-management-service-db:
+    image: 'mongo:latest'
+    restart: always
+    environment:
+      - 'MONGO_INITDB_DATABASE=atm-log-management-service-db'
+      - 'MONGO_INITDB_ROOT_USERNAME=admin'
+      - 'MONGO_INITDB_ROOT_PASSWORD=admin'
+    ports:
+      - '4445:27017'
+    networks:
+      - atm-log-management-service-network
+
+## Discovery Server
+  atm-discovery-server:
+    image: amtrbouaro/atm-discovery-server
+    ports:
+      - '8882:8882'
+    restart: on-failure
+    networks:
+      - atm-microservice-network
+    env_file:
+      - ./env/atm-discovery-server.env
+
+## Config Server
+  atm-config-server:
+    image: amtrbouaro/atm-config-server
+    ports:
+      - '8881:8881'
+    restart: on-failure
+    networks:
+      - atm-microservice-network
+    env_file:
+      - ./env/atm-config-server.env
+
+#  # API Gateway
+  atm-api-gateway:
+    image: amtrbouaro/atm-api-gateway
+    ports:
+      - '8083:8083'
+    restart: on-failure
+    networks:
+      - atm-microservice-network
+    env_file:
+      - ./env/atm-api-gateway.env
+
+#
+  atm-zipkin:
+    image: openzipkin/zipkin
+    container_name: atm_zipkin
+    ports:
+      - 9490:9411
+    networks:
+      - atm-microservice-network
+
+  atm-prometheus:
+    image: prom/prometheus:latest
+    container_name: atm_prometheus
+    restart: unless-stopped
+    ports:
+      - '9491:9090'
+    volumes:
+      - ./data/prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - atm-microservice-network
+
+  atm-grafana:
+    image: grafana/grafana:latest
+    container_name: atm_grafana
+    restart: unless-stopped
+    ports:
+      - '9492:3000'
+    depends_on:
+      - atm-prometheus
+    volumes:
+      - ./data/grafana/config:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOWS_SIGN_UP=false
+      - GF_SERVER_DOMAIN=localhost
+      - GF_LOG_MODE=console file
+    networks:
+      - atm-microservice-network
+
+  atm-kafka:
+    image: landoop/fast-data-dev:latest
+    container_name: atm_kafka
+    ports:
+      - 3181:3181
+      - 3040:3040
+      - 7082:7082
+      - 7083:7083
+      - 9092:9092
+    environment:
+      ADV_HOST: 127.0.0.1
+      RUNTESTS: 0
+      SAMPLEDATA: 0
+      BROKER_PORT: 9092
+      REST_PORT: 7082
+      CONNECT_PORT: 7083
+      ZK_PORT: 3181
+      WEB_PORT: 3040
+      REGISTRY_PORT: 8081
+    restart: unless-stopped
+    networks:
+      - atm-microservice-network
+
+#
+  atm-redis:
+    image: 'bitnami/redis:latest'
+    restart: always
+    ports:
+      - '6385:6379'
+    networks:
+      - atm-microservice-network
+
+networks:
+  atm-microservice-network:
+    driver: bridge
+  atm-bank-management-service-network:
+    driver: bridge
+  atm-log-management-service-network:
+    driver: bridge
+  atm-notification-service-network:
+    driver: bridge
+  atm-transaction-management-service-network:
+    driver: bridge
+  atm-user-management-service-network:
+    driver: bridge
+  atm-account-management-service-network:
+    driver: bridge
+  kafka_network:
+    external: false
+  atm-network:
+    external: false
