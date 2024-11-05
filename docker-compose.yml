@@ -3,6 +3,7 @@ services:
   # Bank Service
   atm-bank-management-service:
     image: amtrbouaro/atm-bank-management-service
+    pull_policy: always
     ports:
       - '8889:8889'
     restart: on-failure
@@ -30,6 +31,7 @@ services:
   # Account Service
   atm-account-management-service:
     image: amtrbouaro/atm-account-management-service
+    pull_policy: always
     ports:
       - '8887:8887'
     restart: on-failure
@@ -57,6 +59,7 @@ services:
 ## User Management Service
   atm-user-management-service:
     image: amtrbouaro/atm-user-management-service
+    pull_policy: always
     ports:
       - '8884:8884'
     restart: on-failure
@@ -85,6 +88,7 @@ services:
 #  # Transaction Management Service
   atm-transaction-management-service:
     image: amtrbouaro/atm-transaction-management-service
+    pull_policy: always
     ports:
       - '8888:8888'
     restart: on-failure
@@ -112,6 +116,7 @@ services:
 # # Notification Service
   atm-notification-service:
     image: amtrbouaro/atm-notification-service
+    pull_policy: always
     ports:
       - '8886:8886'
     restart: on-failure
@@ -127,6 +132,7 @@ services:
 # # Log Management Service
   atm-log-management-service:
     image: amtrbouaro/atm-log-management-service
+    pull_policy: always
     ports:
       - '8885:8885'
     restart: on-failure
@@ -155,6 +161,7 @@ services:
 ## Discovery Server
   atm-discovery-server:
     image: amtrbouaro/atm-discovery-server
+    pull_policy: always
     ports:
       - '8882:8882'
     restart: on-failure
@@ -168,6 +175,7 @@ services:
 ## Config Server
   atm-config-server:
     image: amtrbouaro/atm-config-server
+    pull_policy: always
     ports:
       - '8881:8881'
     restart: on-failure
@@ -179,6 +187,7 @@ services:
 #  # API Gateway
   atm-api-gateway:
     image: amtrbouaro/atm-api-gateway
+    pull_policy: always
     ports:
       - '8083:8083'
     restart: on-failure
