@@ -10,7 +10,7 @@ services:
     depends_on:
       - atm-bank-management-service-db
       - atm-kafka
-      - atm-api-gateway
+      - atm-config-server
     networks:
       - atm-microservice-network
       - atm-bank-management-service-network
@@ -38,7 +38,7 @@ services:
     depends_on:
       - atm-account-management-service-db
       - atm-kafka
-      - atm-api-gateway
+      - atm-config-server
     networks:
       - atm-microservice-network
       - atm-account-management-service-network
@@ -66,7 +66,7 @@ services:
     depends_on:
       - atm-user-management-service-db
       - atm-kafka
-      - atm-api-gateway
+      - atm-config-server
     networks:
       - atm-microservice-network
       - atm-user-management-service-network
@@ -95,7 +95,7 @@ services:
     depends_on:
       - atm-transaction-management-service-db
       - atm-kafka
-      - atm-api-gateway
+      - atm-config-server
     networks:
       - atm-microservice-network
       - atm-transaction-management-service-network
@@ -121,13 +121,12 @@ services:
       - '8886:8886'
     restart: on-failure
     depends_on:
-      - atm-notification-service-db
       - atm-kafka
-      - atm-api-gateway
+      - atm-config-server
     networks:
       - atm-microservice-network
     env_file:
-      - ./env/atm-notification-management-service.env
+      - ./env/atm-notification-service.env
 
 # # Log Management Service
   atm-log-management-service:
@@ -139,7 +138,7 @@ services:
     depends_on:
       - atm-log-management-service-db
       - atm-kafka
-      - atm-api-gateway
+      - atm-config-server
     networks:
       - atm-microservice-network
       - atm-log-management-service-network
@@ -189,10 +188,10 @@ services:
     image: amtrbouaro/atm-api-gateway
     pull_policy: always
     ports:
-      - '8083:8083'
+      - '8883:8883'
     restart: on-failure
     depends_on:
-      - atm-discovery-server
+      - atm-config-server
     networks:
       - atm-microservice-network
     env_file:
