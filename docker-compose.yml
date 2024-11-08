@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 services:
   # Bank Service
   atm-bank-management-service:
@@ -8,7 +8,6 @@ services:
       - '8889:8889'
     restart: on-failure
     depends_on:
-      - atm-bank-management-service-db
       - atm-kafka
       - atm-config-server
     networks:
@@ -16,17 +15,6 @@ services:
       - atm-bank-management-service-network
     env_file:
       - ./env/atm-bank-management-service.env
-
-  atm-bank-management-service-db:
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: atm-bank-management-service-db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-    ports:
-      - '4009:5432'
-    networks:
-      - atm-bank-management-service-network
 
   # Account Service
   atm-account-management-service:
@@ -36,7 +24,6 @@ services:
       - '8887:8887'
     restart: on-failure
     depends_on:
-      - atm-account-management-service-db
       - atm-kafka
       - atm-config-server
     networks:
@@ -44,17 +31,6 @@ services:
       - atm-account-management-service-network
     env_file:
       - ./env/atm-account-management-service.env
-
-  atm-account-management-service-db:
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: atm-account-management-service-db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-    ports:
-      - '4007:5432'
-    networks:
-      - atm-account-management-service-network
 
 ## User Management Service
   atm-user-management-service:
@@ -64,7 +40,6 @@ services:
       - '8884:8884'
     restart: on-failure
     depends_on:
-      - atm-user-management-service-db
       - atm-kafka
       - atm-config-server
     networks:
@@ -72,18 +47,6 @@ services:
       - atm-user-management-service-network
     env_file:
       - ./env/atm-user-management-service.env
-
-  atm-user-management-service-db:
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: atm-user-management-service-db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-    ports:
-      - '4004:5432'
-    networks:
-      - atm-user-management-service-network
-
 
 #  # Transaction Management Service
   atm-transaction-management-service:
@@ -93,7 +56,6 @@ services:
       - '8888:8888'
     restart: on-failure
     depends_on:
-      - atm-transaction-management-service-db
       - atm-kafka
       - atm-config-server
     networks:
@@ -101,17 +63,6 @@ services:
       - atm-transaction-management-service-network
     env_file:
       - ./env/atm-transaction-management-service.env
-
-  atm-transaction-management-service-db:
-    image: postgres:latest
-    environment:
-      POSTGRES_DB: atm-transaction-management-service-db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-    ports:
-      - '4008:5432'
-    networks:
-      - atm-transaction-management-service-network
 
 # # Notification Service
   atm-notification-service:
