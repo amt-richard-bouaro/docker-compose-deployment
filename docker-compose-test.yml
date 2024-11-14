@@ -2,8 +2,10 @@ version: '3.9'
 services:
   # Bank Service
   atm-bank-management-service:
-    image: amtrbouaro/atm-bank-management-service
-    pull_policy: always
+    build:
+      context: ../ATM-bank-management-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-bank-management-service:1.0.2
     ports:
       - '8889:8889'
     restart: on-failure
@@ -12,14 +14,15 @@ services:
       - atm-config-server
     networks:
       - atm-microservice-network
-      - atm-bank-management-service-network
     env_file:
       - ./env/atm-bank-management-service.env
 
   # Account Service
   atm-account-management-service:
-    image: amtrbouaro/atm-account-management-service
-    pull_policy: always
+    build:
+      context: ../ATM-account-managment-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-account-management-service:1.0.2
     ports:
       - '8887:8887'
     restart: on-failure
@@ -28,14 +31,15 @@ services:
       - atm-config-server
     networks:
       - atm-microservice-network
-      - atm-account-management-service-network
     env_file:
       - ./env/atm-account-management-service.env
 
 ## User Management Service
   atm-user-management-service:
-    image: amtrbouaro/atm-user-management-service
-    pull_policy: always
+    build:
+      context: ../ATM-user-management-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-user-management-service:1.0.3
     ports:
       - '8884:8884'
     restart: on-failure
@@ -50,14 +54,15 @@ services:
       retries: 5
     networks:
       - atm-microservice-network
-      - atm-user-management-service-network
     env_file:
       - ./env/atm-user-management-service.env
 
 #  # Transaction Management Service
   atm-transaction-management-service:
-    image: amtrbouaro/atm-transaction-management-service
-    pull_policy: always
+    build:
+      context: ../ATM-transaction-management-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-transaction-management-service:1.0.3
     ports:
       - '8888:8888'
     restart: on-failure
@@ -66,14 +71,15 @@ services:
       - atm-config-server
     networks:
       - atm-microservice-network
-      - atm-transaction-management-service-network
     env_file:
       - ./env/atm-transaction-management-service.env
 
 # # Notification Service
   atm-notification-service:
-    image: amtrbouaro/atm-notification-service
-    pull_policy: always
+    build:
+      context: ../ATM-notification-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-notification-service:1.0.2
     ports:
       - '8886:8886'
     restart: on-failure
@@ -87,8 +93,10 @@ services:
 
 # # Log Management Service
   atm-log-management-service:
-    image: amtrbouaro/atm-log-management-service
-    pull_policy: always
+    build:
+      context: ../ATM-log-management-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-log-management-service:1.0.2
     ports:
       - '8885:8885'
     restart: on-failure
@@ -98,7 +106,6 @@ services:
       - atm-config-server
     networks:
       - atm-microservice-network
-      - atm-log-management-service-network
     env_file:
       - ./env/atm-log-management-service.env
 
@@ -111,13 +118,15 @@ services:
       - 'MONGO_INITDB_ROOT_PASSWORD=admin'
     ports:
       - '4445:27017'
-    networks:
-      - atm-log-management-service-network
+
+
 
 ## Discovery Server
   atm-discovery-server:
-    image: amtrbouaro/atm-discovery-server:226f4e9
-    pull_policy: always
+    build:
+      context: ../ATM-discovery-server/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-discovery-server:1.0.2
     ports:
       - '8882:8882'
     restart: on-failure
@@ -130,8 +139,8 @@ services:
 
 ## Config Server
   atm-config-server:
-    image: amtrbouaro/atm-config-server:d37c490
-    pull_policy: always
+    build: ../ATM-config-server
+    image: amtrbouaro/atm-config-server:1.0.2
     ports:
       - '8881:8881'
     restart: on-failure
@@ -142,8 +151,10 @@ services:
 
 #  # API Gateway
   atm-api-gateway:
-    image: amtrbouaro/atm-api-gateway:6b6385f
-    pull_policy: always
+    build:
+      context: ../ATM-api-gateway/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-api-gateway:1.0.3
     ports:
       - '8883:8883'
     restart: on-failure
@@ -157,7 +168,7 @@ services:
 #
   atm-zipkin:
     image: openzipkin/zipkin
-    container_name: atm_zipkin
+    container_name: atm-zipkin
     ports:
       - 9490:9411
     networks:
@@ -165,7 +176,7 @@ services:
 
   atm-prometheus:
     image: prom/prometheus:latest
-    container_name: atm_prometheus
+    container_name: atm-prometheus
     restart: unless-stopped
     ports:
       - '9491:9090'
@@ -178,7 +189,7 @@ services:
 
   atm-grafana:
     image: grafana/grafana:latest
-    container_name: atm_grafana
+    container_name: atm-grafana
     restart: unless-stopped
     ports:
       - '9492:3000'
@@ -204,7 +215,7 @@ services:
       - 7083:7083
       - 9092:9092
     environment:
-      ADV_HOST: 127.0.0.1
+      ADV_HOST: atm-kafka
       RUNTESTS: 0
       SAMPLEDATA: 0
       BROKER_PORT: 9092
@@ -217,29 +228,28 @@ services:
     networks:
       - atm-microservice-network
 
-#
-  atm-redis:
-    image: 'bitnami/redis:latest'
-    restart: always
+  atm-zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+  atm-broker:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: broker
     ports:
-      - '6385:6379'
-    networks:
-      - atm-microservice-network
+      - "9093:9092"
+    depends_on:
+      - atm-zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
 networks:
   atm-microservice-network:
     driver: bridge
-  atm-bank-management-service-network:
-    driver: bridge
-  atm-log-management-service-network:
-    driver: bridge
-  atm-transaction-management-service-network:
-    driver: bridge
-  atm-user-management-service-network:
-    driver: bridge
-  atm-account-management-service-network:
-    driver: bridge
-  kafka_network:
-    external: false
-  atm-network:
-    external: false
