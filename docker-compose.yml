@@ -12,7 +12,6 @@ services:
       - atm-config-server
     networks:
       - atm-microservice-network
-      - atm-bank-management-service-network
     env_file:
       - ./env/atm-bank-management-service.env
 
@@ -28,13 +27,12 @@ services:
       - atm-config-server
     networks:
       - atm-microservice-network
-      - atm-account-management-service-network
     env_file:
       - ./env/atm-account-management-service.env
 
-## User Management Service
+## User Management Service Last-812e044
   atm-user-management-service:
-    image: amtrbouaro/atm-user-management-service
+    image: amtrbouaro/atm-user-management-service:0bd1a8f
     pull_policy: always
     ports:
       - '8884:8884'
@@ -50,7 +48,6 @@ services:
       retries: 5
     networks:
       - atm-microservice-network
-      - atm-user-management-service-network
     env_file:
       - ./env/atm-user-management-service.env
 
@@ -66,13 +63,12 @@ services:
       - atm-config-server
     networks:
       - atm-microservice-network
-      - atm-transaction-management-service-network
     env_file:
       - ./env/atm-transaction-management-service.env
 
 # # Notification Service
   atm-notification-service:
-    image: amtrbouaro/atm-notification-service
+    image: amtrbouaro/atm-notification-management-service:43bb7c3
     pull_policy: always
     ports:
       - '8886:8886'
@@ -87,7 +83,7 @@ services:
 
 # # Log Management Service
   atm-log-management-service:
-    image: amtrbouaro/atm-log-management-service
+    image: amtrbouaro/atm-log-management-service:51fde78
     pull_policy: always
     ports:
       - '8885:8885'
@@ -98,7 +94,6 @@ services:
       - atm-config-server
     networks:
       - atm-microservice-network
-      - atm-log-management-service-network
     env_file:
       - ./env/atm-log-management-service.env
 
@@ -112,7 +107,7 @@ services:
     ports:
       - '4445:27017'
     networks:
-      - atm-log-management-service-network
+      - atm-microservice-network
 
 ## Discovery Server
   atm-discovery-server:
@@ -128,9 +123,9 @@ services:
     env_file:
       - ./env/atm-discovery-server.env
 
-## Config Server
+## Config Server Last-43c1846
   atm-config-server:
-    image: amtrbouaro/atm-config-server:d37c490
+    image: amtrbouaro/atm-config-server:ef8b4a5
     pull_policy: always
     ports:
       - '8881:8881'
@@ -204,7 +199,7 @@ services:
       - 7083:7083
       - 9092:9092
     environment:
-      ADV_HOST: 127.0.0.1
+      ADV_HOST: atm-kafka
       RUNTESTS: 0
       SAMPLEDATA: 0
       BROKER_PORT: 9092
@@ -218,28 +213,14 @@ services:
       - atm-microservice-network
 
 #
-  atm-redis:
-    image: 'bitnami/redis:latest'
-    restart: always
-    ports:
-      - '6385:6379'
-    networks:
-      - atm-microservice-network
+#  atm-redis:
+#    image: 'bitnami/redis:latest'
+#    restart: always
+#    ports:
+#      - '6385:6379'
+#    networks:
+#      - atm-microservice-network
 
 networks:
   atm-microservice-network:
     driver: bridge
-  atm-bank-management-service-network:
-    driver: bridge
-  atm-log-management-service-network:
-    driver: bridge
-  atm-transaction-management-service-network:
-    driver: bridge
-  atm-user-management-service-network:
-    driver: bridge
-  atm-account-management-service-network:
-    driver: bridge
-  kafka_network:
-    external: false
-  atm-network:
-    external: false
