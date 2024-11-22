@@ -196,7 +196,7 @@ services:
 
   atm-kafka:
     image: landoop/fast-data-dev:latest
-    container_name: atm_kafka
+    container_name: atm-kafka
     ports:
       - 3181:3181
       - 3040:3040
@@ -204,7 +204,7 @@ services:
       - 7083:7083
       - 9092:9092
     environment:
-      ADV_HOST: 127.0.0.1
+      ADV_HOST: localhost
       RUNTESTS: 0
       SAMPLEDATA: 0
       BROKER_PORT: 9092
