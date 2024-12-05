@@ -1,176 +1,359 @@
-version: '3.9'
+version: '3.8'
+
 services:
-  # Bank Service
-  atm-bank-management-service:
+  # Config Server
+  atm-config-server:
     build:
-      context: ../ATM-bank-management-service/
+      context: ../ATM-config-server
       dockerfile: Dockerfile
-    image: amtrbouaro/atm-bank-management-service:1.0.2
+    image: amtrbouaro/atm-config-server:${CONFIG_SERVER_IMAGE_TAG}
+    container_name: atm-config-server
     ports:
-      - '8889:8889'
-    restart: on-failure
-    depends_on:
-      - atm-kafka
-      - atm-config-server
-    networks:
-      - atm-microservice-network
-    env_file:
-      - ./env/atm-bank-management-service.env
-
-  # Account Service
-  atm-account-management-service:
-    build:
-      context: ../ATM-account-managment-service/
-      dockerfile: Dockerfile
-    image: amtrbouaro/atm-account-management-service:1.0.2
-    ports:
-      - '8887:8887'
-    restart: on-failure
-    depends_on:
-      - atm-kafka
-      - atm-config-server
-    networks:
-      - atm-microservice-network
-    env_file:
-      - ./env/atm-account-management-service.env
-
-## User Management Service
-  atm-user-management-service:
-    build:
-      context: ../ATM-user-management-service/
-      dockerfile: Dockerfile
-    image: amtrbouaro/atm-user-management-service:1.0.3
-    ports:
-      - '8884:8884'
-    restart: on-failure
-    depends_on:
-      - atm-kafka
-      - atm-config-server
-      - atm-zipkin
+      - ${CONFIG_SERVER_HOST_PORT}:${CONFIG_SERVER_CONTAINER_PORT}
+    environment:
+      - SERVER_PORT=${CONFIG_SERVER_CONTAINER_PORT}
+      - SERVICE_NAME=${CONFIG_SERVER_SERVICE_NAME}
+      - SPRING_PROFILES_ACTIVE=${CONFIG_SERVER_SPRING_PROFILES_ACTIVE}
+      - CONFIG_SEARCH_LOCATIONS=${CONFIG_SERVER_CONFIG_SEARCH_LOCATIONS}
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://atm-config-server:8881/actuator/health" ]
+      test: "curl --fail --silent localhost:${CONFIG_SERVER_CONTAINER_PORT}/actuator/health/readiness | grep UP || exit 1"
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - atm-microservice-network
-    env_file:
-      - ./env/atm-user-management-service.env
-
-#  # Transaction Management Service
-  atm-transaction-management-service:
-    build:
-      context: ../ATM-transaction-management-service/
-      dockerfile: Dockerfile
-    image: amtrbouaro/atm-transaction-management-service:1.0.3
-    ports:
-      - '8888:8888'
-    restart: on-failure
-    depends_on:
-      - atm-kafka
-      - atm-config-server
-    networks:
-      - atm-microservice-network
-    env_file:
-      - ./env/atm-transaction-management-service.env
-
-# # Notification Service
-  atm-notification-service:
-    build:
-      context: ../ATM-notification-service/
-      dockerfile: Dockerfile
-    image: amtrbouaro/atm-notification-service:1.0.2
-    ports:
-      - '8886:8886'
-    restart: on-failure
-    depends_on:
-      - atm-kafka
-      - atm-config-server
-    networks:
-      - atm-microservice-network
-    env_file:
-      - ./env/atm-notification-service.env
-
-# # Log Management Service
-  atm-log-management-service:
-    build:
-      context: ../ATM-log-management-service/
-      dockerfile: Dockerfile
-    image: amtrbouaro/atm-log-management-service:1.0.2
-    ports:
-      - '8885:8885'
-    restart: on-failure
-    depends_on:
-      - atm-log-management-service-db
-      - atm-kafka
-      - atm-config-server
-    networks:
-      - atm-microservice-network
-    env_file:
-      - ./env/atm-log-management-service.env
-
-  atm-log-management-service-db:
-    image: 'mongo:latest'
-    restart: always
-    environment:
-      - 'MONGO_INITDB_DATABASE=atm-log-management-service-db'
-      - 'MONGO_INITDB_ROOT_USERNAME=admin'
-      - 'MONGO_INITDB_ROOT_PASSWORD=admin'
-    ports:
-      - '4445:27017'
-
-
-
-## Discovery Server
-  atm-discovery-server:
-    build:
-      context: ../ATM-discovery-server/
-      dockerfile: Dockerfile
-    image: amtrbouaro/atm-discovery-server:1.0.2
-    ports:
-      - '8882:8882'
-    restart: on-failure
-    depends_on:
-      - atm-config-server
-    networks:
-      - atm-microservice-network
-    env_file:
-      - ./env/atm-discovery-server.env
-
-## Config Server
-  atm-config-server:
-    build: ../ATM-config-server
-    image: amtrbouaro/atm-config-server:1.0.2
-    ports:
-      - '8881:8881'
-    restart: on-failure
+      start_period: 10s
     networks:
       - atm-microservice-network
     env_file:
       - ./env/atm-config-server.env
 
-#  # API Gateway
+  # Discovery Server
+  atm-discovery-server:
+    build:
+      context: ../ATM-discovery-server/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-discovery-server:${DISCOVERY_SERVER_IMAGE_TAG}
+    container_name: atm-discovery-server
+    ports:
+      - ${DISCOVERY_SERVER_HOST_PORT}:${DISCOVERY_SERVER_CONTAINER_PORT}
+    depends_on:
+      atm-config-server:
+        condition: service_healthy
+    healthcheck:
+      test: "curl --fail --silent localhost:${DISCOVERY_SERVER_CONTAINER_PORT}/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atm-microservice-network
+    env_file:
+      - ./env/atm-discovery-server.env
+
+  # API Gateway
   atm-api-gateway:
     build:
       context: ../ATM-api-gateway/
       dockerfile: Dockerfile
-    image: amtrbouaro/atm-api-gateway:1.0.3
+    image: amtrbouaro/atm-api-gateway:${API_GATEWAY_IMAGE_TAG}
+    container_name: atm-api-gateway
     ports:
-      - '8883:8883'
-    restart: on-failure
+      - ${API_GATEWAY_HOST_PORT}:${API_GATEWAY_CONTAINER_PORT}
     depends_on:
-      - atm-config-server
+      atm-config-server:
+        condition: service_healthy
+      atm-discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: "curl --fail --silent localhost:${API_GATEWAY_CONTAINER_PORT}/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - atm-microservice-network
     env_file:
       - ./env/atm-api-gateway.env
 
-#
+  # User Management Service
+  atm-user-management-service:
+    build:
+      context: ../ATM-user-management-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-user-management-service:${USER_SERVICE_IMAGE_TAG}
+    container_name: atm-user-management-service
+    ports:
+      - ${USER_SERVICE_HOST_PORT}:${USER_SERVICE_CONTAINER_PORT}
+    depends_on:
+      atm-config-server:
+        condition: service_healthy
+      atm-discovery-server:
+        condition: service_healthy
+      atm-user-db:
+        condition: service_healthy
+      atm-kafka:
+        condition: service_started
+      atm-zipkin:
+        condition: service_started
+    healthcheck:
+      test: "curl --fail --silent localhost:${USER_SERVICE_CONTAINER_PORT}/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - atm-microservice-network
+    env_file:
+      - ./env/atm-user-management-service.env
+
+  # Transaction Management Service
+  atm-transaction-management-service:
+    build:
+      context: ../ATM-transaction-management-service/
+      dockerfile: Dockerfile
+    image:  amtrbouaro/atm-transaction-management-service:${TRANSACTION_SERVICE_IMAGE_TAG}
+    container_name: atm-transaction-management-service
+    ports:
+      - ${TRANSACTION_SERVICE_HOST_PORT}:${TRANSACTION_SERVICE_CONTAINER_PORT}
+    depends_on:
+      atm-config-server:
+        condition: service_healthy
+      atm-discovery-server:
+        condition: service_healthy
+      atm-transaction-db:
+        condition: service_healthy
+      atm-kafka:
+        condition: service_started
+    healthcheck:
+      test: "curl --fail --silent localhost:${TRANSACTION_SERVICE_CONTAINER_PORT}/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atm-microservice-network
+    env_file:
+      - ./env/atm-transaction-management-service.env
+
+  # Account Management Service
+  atm-account-management-service:
+    build:
+      context: ../ATM-account-managment-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-account-management-service:${ACCOUNT_SERVICE_IMAGE_TAG}
+    container_name: atm-account-management-service
+    ports:
+      - ${ACCOUNT_SERVICE_HOST_PORT}:${ACCOUNT_SERVICE_CONTAINER_PORT}
+    depends_on:
+      atm-config-server:
+        condition: service_healthy
+      atm-discovery-server:
+        condition: service_healthy
+      atm-account-db:
+        condition: service_healthy
+      atm-kafka:
+        condition: service_started
+    healthcheck:
+      test: "curl --fail --silent localhost:${ACCOUNT_SERVICE_CONTAINER_PORT}/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atm-microservice-network
+    env_file:
+      - ./env/atm-account-management-service.env
+
+  # Bank Management Service
+  atm-bank-management-service:
+    build:
+      context: ../ATM-bank-management-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-bank-management-service:${BANK_SERVICE_IMAGE_TAG}
+    container_name: atm-bank-management-service
+    ports:
+      - ${BANK_SERVICE_HOST_PORT}:${BANK_SERVICE_CONTAINER_PORT}
+    depends_on:
+      atm-config-server:
+        condition: service_healthy
+      atm-discovery-server:
+        condition: service_healthy
+      atm-bank-db:
+        condition: service_healthy
+      atm-kafka:
+        condition: service_started
+    healthcheck:
+      test: "curl --fail --silent localhost:${BANK_SERVICE_CONTAINER_PORT}/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atm-microservice-network
+    env_file:
+      - ./env/atm-bank-management-service.env
+
+  # Log Management Service
+  atm-log-management-service:
+    build:
+      context: ../ATM-log-management-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-log-management-service:${LOG_SERVICE_IMAGE_TAG}
+    container_name: atm-log-management-service
+    ports:
+      - ${LOG_SERVICE_HOST_PORT}:${LOG_SERVICE_CONTAINER_PORT}
+    depends_on:
+      atm-config-server:
+        condition: service_healthy
+      atm-discovery-server:
+        condition: service_healthy
+      atm-log-db:
+        condition: service_started
+      atm-kafka:
+        condition: service_started
+    healthcheck:
+      test: "curl --fail --silent localhost:${LOG_SERVICE_CONTAINER_PORT}/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atm-microservice-network
+    env_file:
+      - ./env/atm-log-management-service.env
+
+  # Log Management Service
+  atm-notification-management-service:
+    build:
+      context: ../ATM-notification-service/
+      dockerfile: Dockerfile
+    image: amtrbouaro/atm-notification-management-service:${NOTIFICATION_SERVICE_IMAGE_TAG}
+    container_name: atm-notification-management-service
+    ports:
+      - ${NOTIFICATION_SERVICE_HOST_PORT}:${NOTIFICATION_SERVICE_CONTAINER_PORT}
+    depends_on:
+      atm-config-server:
+        condition: service_healthy
+      atm-discovery-server:
+        condition: service_healthy
+      atm-kafka:
+        condition: service_started
+    healthcheck:
+      test: "curl --fail --silent localhost:${NOTIFICATION_SERVICE_CONTAINER_PORT}/actuator/health/readiness | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atm-microservice-network
+    env_file:
+      - ./env/atm-notification-service.env
+
+  # PostgreSQL Databases
+  atm-user-db:
+    image: postgres
+    container_name: atm-user-db
+    environment:
+      - POSTGRES_DB=${USER_SERVICE_POSTGRES_DATABASE}
+      - POSTGRES_PASSWORD=${USER_SERVICE_POSTGRES_PASSWORD}
+      - POSTGRES_USER=${USER_SERVICE_POSTGRES_USER}
+    ports:
+      - ${USER_SERVICE_POSTGRES_HOST_PORT}:${USER_SERVICE_POSTGRES_CONTAINER_PORT}
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U ${USER_SERVICE_POSTGRES_USER} -d ${USER_SERVICE_POSTGRES_DATABASE} -c 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    networks:
+      - atm-microservice-network
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+
+  atm-transaction-db:
+    image: postgres
+    container_name: atm-transaction-db
+    environment:
+      - POSTGRES_DB=${TRANSACTION_SERVICE_POSTGRES_DATABASE}
+      - POSTGRES_PASSWORD=${TRANSACTION_SERVICE_POSTGRES_PASSWORD}
+      - POSTGRES_USER=${TRANSACTION_SERVICE_POSTGRES_USER}
+    ports:
+      - ${TRANSACTION_SERVICE_POSTGRES_HOST_PORT}:${TRANSACTION_SERVICE_POSTGRES_CONTAINER_PORT}
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U ${TRANSACTION_SERVICE_POSTGRES_USER} -d ${TRANSACTION_SERVICE_POSTGRES_DATABASE} -c 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atm-microservice-network
+    volumes:
+      - transaction-db-data:/var/lib/postgresql/data
+
+  atm-account-db:
+    image: postgres:latest
+    container_name: atm-account-db
+    environment:
+      - POSTGRES_DB=${ACCOUNT_SERVICE_POSTGRES_DATABASE}
+      - POSTGRES_PASSWORD=${ACCOUNT_SERVICE_POSTGRES_PASSWORD}
+      - POSTGRES_USER=${ACCOUNT_SERVICE_POSTGRES_USER}
+    ports:
+      - ${ACCOUNT_SERVICE_POSTGRES_HOST_PORT}:${ACCOUNT_SERVICE_POSTGRES_CONTAINER_PORT}
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U ${ACCOUNT_SERVICE_POSTGRES_USER} -d ${ACCOUNT_SERVICE_POSTGRES_DATABASE} -c 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atm-microservice-network
+    volumes:
+      - account-db-data:/var/lib/postgresql/data
+
+  atm-bank-db:
+    image: postgres:latest
+    container_name: atm-bank-db
+    environment:
+      - POSTGRES_DB=${BANK_SERVICE_POSTGRES_DATABASE}
+      - POSTGRES_PASSWORD=${BANK_SERVICE_POSTGRES_PASSWORD}
+      - POSTGRES_USER=${BANK_SERVICE_POSTGRES_USER}
+    ports:
+      - ${BANK_SERVICE_POSTGRES_HOST_PORT}:${BANK_SERVICE_POSTGRES_CONTAINER_PORT}
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U ${LOG_SERVICE_POSTGRES_USER} -d ${BANK_SERVICE_POSTGRES_DATABASE} -c 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atm-microservice-network
+    volumes:
+      - bank-db-data:/var/lib/postgresql/data
+
+  # MongoDB for Log Management
+  atm-log-db:
+    image: mongo:latest
+    container_name: atm-log-db
+    restart: always
+    environment:
+      - 'MONGO_INITDB_DATABASE=${LOG_SERVICE_MONGO_DATABASE}'
+      - 'MONGO_INITDB_ROOT_USERNAME=${LOG_SERVICE_MONGO_USER}'
+      - 'MONGO_INITDB_ROOT_PASSWORD=${LOG_SERVICE_MONGO_PASSWORD}'
+    ports:
+      - ${LOG_SERVICE_MONGO_HOST_PORT}:${LOG_SERVICE_MONGO_CONTAINER_PORT}
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:${LOG_SERVICE_MONGO_CONTAINER_PORT}/${LOG_SERVICE_MONGO_DATABASE} --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - atm-microservice-network
+
   atm-zipkin:
     image: openzipkin/zipkin
     container_name: atm-zipkin
     ports:
-      - 9490:9411
+      - ${ZIPKIN_HOST_PORT}:${ZIPKIN_CONTAINER_PORT}
     networks:
       - atm-microservice-network
 
@@ -179,7 +362,7 @@ services:
     container_name: atm-prometheus
     restart: unless-stopped
     ports:
-      - '9491:9090'
+      - ${PROMETHEUS_HOST_PORT}:${PROMETHEUS_CONTAINER_PORT}
     volumes:
       - ./data/prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml
     command:
@@ -192,22 +375,22 @@ services:
     container_name: atm-grafana
     restart: unless-stopped
     ports:
-      - '9492:3000'
+      - ${GRAFANA_HOST_PORT}:${GRAFANA_CONTAINER_PORT}
     depends_on:
       - atm-prometheus
     volumes:
       - ./data/grafana/config:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOWS_SIGN_UP=false
-      - GF_SERVER_DOMAIN=localhost
-      - GF_LOG_MODE=console file
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_SECURITY_ADMIN_PASSWORD}
+      - GF_USERS_ALLOWS_SIGN_UP=${GRAFANA_USERS_ALLOWS_SIGN_UP}
+      - GF_SERVER_DOMAIN=${GRAFANA_SERVER_DOMAIN}
+      - GF_LOG_MODE=${GRAFANA_LOG_MODE}
     networks:
       - atm-microservice-network
 
   atm-kafka:
     image: landoop/fast-data-dev:latest
-    container_name: atm_kafka
+    container_name: atm-kafka
     ports:
       - 3181:3181
       - 3040:3040
@@ -228,27 +411,31 @@ services:
     networks:
       - atm-microservice-network
 
-  atm-zookeeper:
-    image: confluentinc/cp-zookeeper:7.0.1
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-  atm-broker:
-    image: confluentinc/cp-kafka:7.0.1
-    container_name: broker
-    ports:
-      - "9093:9092"
-    depends_on:
-      - atm-zookeeper
+  # Kafka
+  atm-kafka-broker:
+    image: bitnami/kafka:latest
+    container_name: atm-kafka
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports:
+      - "9092:9092"
+
+  # Zookeeper
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: atm-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+
+volumes:
+  user-db-data:
+  transaction-db-data:
+  account-db-data:
+  bank-db-data:
 
 networks:
   atm-microservice-network:

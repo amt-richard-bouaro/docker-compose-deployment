@@ -2,3 +2,4 @@ env/
 data/
 start-all-services.sh
 .idea/
+.env
